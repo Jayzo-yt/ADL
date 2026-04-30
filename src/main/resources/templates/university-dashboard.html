@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Dashboard</title>
+</head>
+<body>
+<h1>University Dashboard</h1>
+<p th:if="${user != null}">Logged in as <strong th:text="${user.username}">user</strong></p>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<div th:if="${success}">
+    <p th:text="${success}"></p>
+</div>
+
+<h2>Upload Student Certificate Details</h2>
+<form th:action="@{/university/certificates/add}" th:object="${certificate}" method="post">
+    <div>
+        <label for="certId">Certificate ID</label>
+        <input id="certId" type="text" th:field="*{certId}" required>
+    </div>
+    <div>
+        <label for="rollNo">Roll Number</label>
+        <input id="rollNo" type="text" th:field="*{rollNo}" required>
+    </div>
+    <div>
+        <label for="name">Student Name</label>
+        <input id="name" type="text" th:field="*{name}" required>
+    </div>
+    <div>
+        <label for="course">Course</label>
+        <input id="course" type="text" th:field="*{course}" required>
+    </div>
+    <div>
+        <label for="cgpa">CGPA / Percentage</label>
+        <input id="cgpa" type="number" step="0.01" min="0" max="100" th:field="*{cgpa}" required>
+    </div>
+    <div>
+        <label for="university">University / College Name</label>
+        <input id="university" type="text" th:field="*{university}" required>
+    </div>
+    <div>
+        <label for="issueDate">Issue Date (optional)</label>
+        <input id="issueDate" type="text" th:field="*{issueDate}" placeholder="DD/MM/YYYY">
+    </div>
+    <button type="submit">Save Certificate Record</button>
+</form>
+
+<hr>
+
+<h2>Public Verification</h2>
+<p>Use this to quickly verify an uploaded certificate file.</p>
+<form th:action="@{/upload}" method="post" enctype="multipart/form-data">
+    <label for="certificateFile">Upload certificate file</label>
+    <input id="certificateFile" type="file" name="certificate" required>
+    <button type="submit">Verify Document</button>
+</form>
+
+<p>
+    <a th:href="@{/home}">Public Home</a> |
+    <a th:href="@{/logout}">Logout</a>
+</p>
+</body>
+</html>

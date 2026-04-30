@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Result</title>
+</head>
+<body>
+<h1>Verification Result</h1>
+
+<div th:if="${log != null}">
+    <p><strong>ID:</strong> <span th:text="${log.id}"></span></p>
+    <p><strong>Certificate ID:</strong> <span th:text="${log.certId}"></span></p>
+    <p><strong>Result:</strong> <span th:text="${log.result}"></span></p>
+    <p><strong>Risk Score:</strong> <span th:text="${log.riskScore}"></span></p>
+    <p><strong>Issues:</strong> <span th:text="${log.issues}"></span></p>
+    <p><strong>Uploaded File:</strong> <span th:text="${log.uploadedFileName}"></span></p>
+    <p><strong>Timestamp:</strong> <span th:text="${log.timestamp}"></span></p>
+</div>
+
+<p>
+    <a th:href="@{/home}">Back to Home</a> |
+    <a th:href="@{/university/dashboard}">University Dashboard</a>
+</p>
+</body>
+</html>

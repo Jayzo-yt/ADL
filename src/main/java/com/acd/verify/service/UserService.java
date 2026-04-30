@@ -1,6 +1,7 @@
 package com.acd.verify.service;
 
 import com.acd.verify.model.UserRegistrationDto;
+import com.acd.verify.model.User;
 import com.acd.verify.model.UserRole;
 import com.acd.verify.repository.RoleRepository;
 import com.acd.verify.repository.UserRepository;
@@ -23,7 +24,7 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public UserRole registerUser(UserRegistrationDto registrationDto) {
+    public User registerUser(UserRegistrationDto registrationDto) {
         if (userRepository.existsByUsername(registrationDto.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
@@ -36,7 +37,7 @@ public class UserService {
             throw new RuntimeException("Passwords do not match");
         }
 
-        UserRole user = new UserRole();
+        User user = new User();
         user.setUsername(registrationDto.getUsername());
         user.setEmail(registrationDto.getEmail());
         user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
@@ -58,7 +59,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public UserRole findByUsername(String username) {
+    public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }

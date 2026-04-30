@@ -4,14 +4,12 @@ import com.acd.verify.model.Certificate;
 import com.acd.verify.model.VerificationLog;
 import com.acd.verify.repository.CertificateRepository;
 import com.acd.verify.repository.VerificationLogRepository;
+import com.acd.verify.service.CertificateHashService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @Controller
@@ -23,6 +21,9 @@ public class AdminController {
 
     @Autowired
     private VerificationLogRepository verificationLogRepository;
+
+    @Autowired
+    private CertificateHashService certificateHashService;
 
     @GetMapping("/logs")
     public String viewLogs(Model model) {
@@ -40,35 +41,14 @@ public class AdminController {
     @PostMapping("/certificates/add")
     @ResponseBody
     public Certificate addCertificate(@RequestBody Certificate certificate) {
-        String hash = calculateHash(certificate);
+        // Basic validation
+        if (certificate.getCertId() == null || certificate.getCertId().isBlank()) {
+            throw new RuntimeException("certId required");
+        }
+
+        String hash = certificateHashService.calculateHash(certificate);
         certificate.setHashValue(hash);
 
         return certificateRepository.save(certificate);
-    }
-
-    private String calculateHash(Certificate cert) {
-        try {
-            String dataString = String.format("%s%s%s%s%s",
-                    cert.getCertId(),
-                    cert.getRollNo(),
-                    cert.getName(),
-                    cert.getMarks(),
-                    cert.getCourse()
-            );
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(dataString.getBytes(StandardCharsets.UTF_8));
-
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            return "";
-        }
     }
 }

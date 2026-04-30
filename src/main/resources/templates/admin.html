@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Logs</title>
+</head>
+<body>
+<h1>Admin - Verification Logs</h1>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Certificate ID</th>
+        <th>Result</th>
+        <th>Risk Score</th>
+        <th>Timestamp</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="log : ${logs}">
+        <td th:text="${log.id}"></td>
+        <td th:text="${log.certId}"></td>
+        <td th:text="${log.result}"></td>
+        <td th:text="${log.riskScore}"></td>
+        <td th:text="${log.timestamp}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<p><a th:href="@{/dashboard}">Back to dashboard</a></p>
+</body>
+</html>

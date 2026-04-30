@@ -6,7 +6,6 @@ import com.acd.verify.model.VerificationResult;
 import com.acd.verify.repository.VerificationLogRepository;
 import com.acd.verify.service.DataExtractionService;
 import com.acd.verify.service.OCRService;
-import com.acd.verify.service.UserService;
 import com.acd.verify.service.VerificationService;
 import net.sourceforge.tess4j.TesseractException;
 import org.slf4j.Logger;
@@ -40,39 +39,49 @@ public class VerificationController {
     @Autowired
     private VerificationLogRepository verificationLogRepository;
 
-    @Autowired
-    private UserService userService;
-
     @GetMapping("/")
-    public String home() {
-        return "index";
-    }
+    public String home() { return "index"; }
 
     @GetMapping("/home")
-    public String homePage() {
-        return "index";
-    }
+    public String homePage() { return "index"; }
 
     @PostMapping("/upload")
     public String uploadCertificate(@RequestParam("certificate") MultipartFile file,
                                     RedirectAttributes redirectAttributes) {
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAuthenticated = auth != null && auth.isAuthenticated() &&
+            auth.getAuthorities().stream().noneMatch(a -> "ROLE_ANONYMOUS".equals(a.getAuthority()));
+        String returnPage = isAuthenticated ? "/university/dashboard" : "/home";
+
         if (file.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Please select a file to upload");
-            return "redirect:/dashboard";
+            return "redirect:" + returnPage;
+        }
+
+        // Basic input validation
+        String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
+        long maxSize = 5L * 1024L * 1024L; // 5MB
+        if (!(contentType.contains("pdf") || contentType.contains("jpeg") || contentType.contains("jpg") || contentType.contains("png"))) {
+            redirectAttributes.addFlashAttribute("error", "Unsupported file type. Allowed: PDF, JPG, PNG");
+            return "redirect:" + returnPage;
+        }
+
+        if (file.getSize() > maxSize) {
+            redirectAttributes.addFlashAttribute("error", "File too large. Max 5MB");
+            return "redirect:" + returnPage;
         }
 
         try {
             logger.info("Processing file: {}", file.getOriginalFilename());
-            String extractedText = ocrService.extractText(file);
 
-            ExtractedData extractedData = dataExtractionService.extractFields(extractedText);
+            var ocrResult = ocrService.extractWithConfidence(file);
 
-            VerificationResult result = verificationService.verify(extractedData);
+            ExtractedData extractedData = dataExtractionService.extractFields(ocrResult.getText());
 
-            // Get current logged-in user
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String username = auth.getName();
+            VerificationResult result = verificationService.verify(extractedData, ocrResult.getAverageConfidence());
+
+            String username = isAuthenticated ? auth.getName() : "PUBLIC";
 
             VerificationLog log = new VerificationLog();
             log.setCertId(extractedData.getCertId());
@@ -80,6 +89,7 @@ public class VerificationController {
             log.setRiskScore(result.getRiskScore());
             log.setIssues(String.join("; ", result.getIssues()));
             log.setTimestamp(LocalDateTime.now());
+            log.setUsername(username);
             log.setUploadedFileName(file.getOriginalFilename());
 
             log = verificationLogRepository.save(log);
@@ -92,7 +102,7 @@ public class VerificationController {
         } catch (IOException | TesseractException e) {
             logger.error("Error processing certificate", e);
             redirectAttributes.addFlashAttribute("error", "Error processing certificate: " + e.getMessage());
-            return "redirect:/dashboard";
+            return "redirect:" + returnPage;
         }
     }
 

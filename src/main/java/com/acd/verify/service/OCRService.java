@@ -1,8 +1,10 @@
 package com.acd.verify.service;
 
 import net.sourceforge.tess4j.ITesseract;
+import net.sourceforge.tess4j.ITessAPI;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import net.sourceforge.tess4j.Word;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.slf4j.Logger;
@@ -14,21 +16,32 @@ import org.apache.pdfbox.Loader;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import com.acd.verify.model.OCRResult;
 
 @Service
 public class OCRService {
 
     private static final Logger logger = LoggerFactory.getLogger(OCRService.class);
 
-    @Value("${tesseract.datapath:/usr/share/tesseract-ocr/4.00/tessdata}")
+    @Value("${tesseract.datapath:}")
     private String tesseractDataPath;
 
     @Value("${tesseract.language:eng}")
     private String tesseractLanguage;
 
-    public String extractText(MultipartFile file) throws IOException, TesseractException {
+    /**
+     * Returns OCR text and average confidence. Newer callers should prefer this method.
+     */
+    public OCRResult extractWithConfidence(MultipartFile file) throws IOException, TesseractException {
         String contentType = file.getContentType();
         BufferedImage image;
 
@@ -42,18 +55,86 @@ public class OCRService {
             throw new IOException("Unable to read image from file");
         }
 
-        // Preprocess image
-        image = preprocessImage(image);
-
-        // Perform OCR
+        // Configure Tesseract
         ITesseract tesseract = new Tesseract();
-        tesseract.setDatapath(tesseractDataPath);
+        tesseract.setDatapath(resolveTessDataPath());
         tesseract.setLanguage(tesseractLanguage);
+        try {
+            tesseract.setPageSegMode(6); // block of text
+        } catch (Exception e) {
+            // ignore if API not available
+        }
+
+        // Try multiple preprocessed variants and pick the best OCR confidence.
+        List<BufferedImage> variants = preprocessVariants(image);
+        double bestConfidence = -1.0;
+        String bestText = "";
+
+        for (BufferedImage variant : variants) {
+            OCRResult partial = runOcrWithConfidence(tesseract, variant);
+            if (partial.getAverageConfidence() > bestConfidence ||
+                    (partial.getAverageConfidence() == bestConfidence && partial.getText().length() > bestText.length())) {
+                bestConfidence = partial.getAverageConfidence();
+                bestText = partial.getText();
+            }
+        }
+
+        logger.info("Extracted text length: {} | avgConf={} | variants={}", bestText.length(), bestConfidence, variants.size());
+
+        return new OCRResult(bestText, Math.max(bestConfidence, 0.0));
+    }
+
+    private OCRResult runOcrWithConfidence(ITesseract tesseract, BufferedImage image) throws TesseractException {
+        List<Word> words = tesseract.getWords(image, ITessAPI.TessPageIteratorLevel.RIL_WORD);
+        if (words != null && !words.isEmpty()) {
+            double sum = 0.0;
+            StringBuilder sb = new StringBuilder();
+            for (Word w : words) {
+                sb.append(w.getText()).append(' ');
+                sum += w.getConfidence();
+            }
+            return new OCRResult(sb.toString().trim(), sum / words.size());
+        }
 
         String text = tesseract.doOCR(image);
-        logger.info("Extracted text length: {}", text.length());
+        return new OCRResult(text == null ? "" : text.trim(), 0.0);
+    }
 
-        return text;
+    private String resolveTessDataPath() throws TesseractException {
+        List<String> candidates = new ArrayList<>();
+
+        if (tesseractDataPath != null && !tesseractDataPath.isBlank()) {
+            candidates.add(tesseractDataPath);
+        }
+
+        String envPath = System.getenv("TESSDATA_PREFIX");
+        if (envPath != null && !envPath.isBlank()) {
+            candidates.add(envPath);
+        }
+
+        candidates.add("D:/ADL/tesseract/tessdata");
+        candidates.add("C:/Program Files/Tesseract-OCR/tessdata");
+        candidates.add("C:/Program Files (x86)/Tesseract-OCR/tessdata");
+
+        List<String> attemptedPaths = new ArrayList<>();
+
+        for (String candidate : candidates) {
+            try {
+                Path path = Path.of(candidate);
+                attemptedPaths.add(path.toString());
+                if (Files.isDirectory(path) && Files.exists(path.resolve(tesseractLanguage + ".traineddata"))) {
+                    logger.info("Using Tesseract datapath: {}", path.toAbsolutePath());
+                    return path.toString();
+                }
+            } catch (InvalidPathException e) {
+                attemptedPaths.add("INVALID(" + candidate.replace("\t", "\\t") + ")");
+            }
+        }
+
+        throw new TesseractException(
+                "Tesseract language data not found. Configure 'tesseract.datapath' in application.properties " +
+                        "or set TESSDATA_PREFIX to your tessdata directory. Checked paths: " + attemptedPaths
+        );
     }
 
     private BufferedImage convertPdfToImage(MultipartFile file) throws IOException {
@@ -69,15 +150,157 @@ public class OCRService {
     }
 
     private BufferedImage preprocessImage(BufferedImage original) {
-        // Convert to grayscale
+        BufferedImage grayscale = toGrayscale(original);
+        BufferedImage scaled = upscaleIfNeeded(grayscale);
+        BufferedImage contrast = stretchContrast(scaled);
+        BufferedImage sharpened = sharpen(contrast);
+        return otsuThreshold(sharpened);
+    }
+
+    private List<BufferedImage> preprocessVariants(BufferedImage original) {
+        List<BufferedImage> variants = new ArrayList<>();
+
+        BufferedImage grayscale = toGrayscale(original);
+        BufferedImage scaled = upscaleIfNeeded(grayscale);
+        BufferedImage contrast = stretchContrast(scaled);
+        BufferedImage sharpened = sharpen(contrast);
+
+        variants.add(contrast);
+        variants.add(otsuThreshold(contrast));
+        variants.add(otsuThreshold(sharpened));
+        variants.add(adaptiveThreshold(contrast, 21, 7));
+        variants.add(preprocessImage(original));
+
+        return variants;
+    }
+
+    private BufferedImage toGrayscale(BufferedImage original) {
         BufferedImage grayscale = new BufferedImage(
                 original.getWidth(),
                 original.getHeight(),
                 BufferedImage.TYPE_BYTE_GRAY
         );
-
         grayscale.getGraphics().drawImage(original, 0, 0, null);
-
         return grayscale;
+    }
+
+    private BufferedImage upscaleIfNeeded(BufferedImage image) {
+        int minTargetWidth = 1600;
+        if (image.getWidth() >= minTargetWidth) {
+            return image;
+        }
+
+        double scale = minTargetWidth / (double) image.getWidth();
+        int newWidth = (int) Math.round(image.getWidth() * scale);
+        int newHeight = (int) Math.round(image.getHeight() * scale);
+
+        BufferedImage upscaled = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_BYTE_GRAY);
+        upscaled.getGraphics().drawImage(image, 0, 0, newWidth, newHeight, null);
+        return upscaled;
+    }
+
+    private BufferedImage stretchContrast(BufferedImage grayscale) {
+        BufferedImage contrast = new BufferedImage(grayscale.getWidth(), grayscale.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+        int w = grayscale.getWidth();
+        int h = grayscale.getHeight();
+
+        int min = 255, max = 0;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int v = grayscale.getRaster().getSample(x, y, 0);
+                if (v < min) min = v;
+                if (v > max) max = v;
+            }
+        }
+
+        double scale = (max > min) ? 255.0 / (max - min) : 1.0;
+
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int v = grayscale.getRaster().getSample(x, y, 0);
+                int vv = (int) Math.round((v - min) * scale);
+                if (vv < 0) vv = 0; if (vv > 255) vv = 255;
+                contrast.getRaster().setSample(x, y, 0, vv);
+            }
+        }
+
+        return contrast;
+    }
+
+    private BufferedImage sharpen(BufferedImage image) {
+        float[] sharpenKernel = {
+                0f, -1f, 0f,
+                -1f, 5f, -1f,
+                0f, -1f, 0f
+        };
+        ConvolveOp op = new ConvolveOp(new Kernel(3, 3, sharpenKernel), ConvolveOp.EDGE_NO_OP, null);
+        BufferedImage out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+        op.filter(image, out);
+        return out;
+    }
+
+    private BufferedImage otsuThreshold(BufferedImage contrast) {
+        int w = contrast.getWidth();
+        int h = contrast.getHeight();
+
+        int[] hist = new int[256];
+        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) hist[contrast.getRaster().getSample(x, y, 0)]++;
+        int total = w * h;
+        double sum = 0; for (int t=0;t<256;t++) sum += t * hist[t];
+        double sumB = 0; int wB = 0; int wF = 0; double varMax = 0; int threshold = 0;
+        for (int t=0;t<256;t++){
+            wB += hist[t]; if (wB == 0) continue;
+            wF = total - wB; if (wF == 0) break;
+            sumB += (double) (t * hist[t]);
+            double mB = sumB / wB;
+            double mF = (sum - sumB) / wF;
+            double varBetween = (double) wB * (double) wF * (mB - mF) * (mB - mF);
+            if (varBetween > varMax) { varMax = varBetween; threshold = t; }
+        }
+
+        BufferedImage bin = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int v = contrast.getRaster().getSample(x, y, 0);
+                bin.getRaster().setSample(x, y, 0, (v >= threshold) ? 255 : 0);
+            }
+        }
+
+        return bin;
+    }
+
+    private BufferedImage adaptiveThreshold(BufferedImage gray, int windowSize, int c) {
+        int w = gray.getWidth();
+        int h = gray.getHeight();
+        int radius = Math.max(1, windowSize / 2);
+
+        long[][] integral = new long[h + 1][w + 1];
+        for (int y = 1; y <= h; y++) {
+            long rowSum = 0;
+            for (int x = 1; x <= w; x++) {
+                int val = gray.getRaster().getSample(x - 1, y - 1, 0);
+                rowSum += val;
+                integral[y][x] = integral[y - 1][x] + rowSum;
+            }
+        }
+
+        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
+        for (int y = 0; y < h; y++) {
+            int y1 = Math.max(0, y - radius);
+            int y2 = Math.min(h - 1, y + radius);
+
+            for (int x = 0; x < w; x++) {
+                int x1 = Math.max(0, x - radius);
+                int x2 = Math.min(w - 1, x + radius);
+
+                long area = (long) (x2 - x1 + 1) * (y2 - y1 + 1);
+                long regionSum = integral[y2 + 1][x2 + 1] - integral[y1][x2 + 1] - integral[y2 + 1][x1] + integral[y1][x1];
+                int mean = (int) (regionSum / area);
+                int v = gray.getRaster().getSample(x, y, 0);
+                out.getRaster().setSample(x, y, 0, v > (mean - c) ? 255 : 0);
+            }
+        }
+
+        return out;
     }
 }

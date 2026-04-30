@@ -1,12 +1,9 @@
 package com.acd.verify.controller;
 
 import com.acd.verify.model.UserRegistrationDto;
-import com.acd.verify.model.UserRole;
 import com.acd.verify.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -52,13 +49,8 @@ public class AuthController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        var user = userService.findByUsername(username);
-
-        model.addAttribute("user", user);
-        return "dashboard";
+    public String dashboard() {
+        return "redirect:/university/dashboard";
     }
 
     @GetMapping("/access-denied")

@@ -10,9 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -26,13 +24,16 @@ public class VerificationService {
     @Autowired
     private RiskScoringService riskScoringService;
 
-    public VerificationResult verify(ExtractedData extractedData) {
+    @Autowired
+    private CertificateHashService certificateHashService;
+
+    public VerificationResult verify(ExtractedData extractedData, double ocrAverageConfidence) {
         VerificationResult result = new VerificationResult();
         result.setExtractedData(extractedData);
 
         if (extractedData.getCertId() == null || extractedData.getCertId().isEmpty()) {
             result.addIssue("Certificate ID not found in document");
-            result.setRiskScore(riskScoringService.calculateScore(result));
+                result.setRiskScore(riskScoringService.calculateScore(result, ocrAverageConfidence));
             result.setStatus(determineStatus(result.getRiskScore()));
             return result;
         }
@@ -41,7 +42,7 @@ public class VerificationService {
 
         if (certOpt.isEmpty()) {
             result.addIssue("Certificate ID not found in database");
-            result.setRiskScore(riskScoringService.calculateScore(result));
+            result.setRiskScore(riskScoringService.calculateScore(result, ocrAverageConfidence));
             result.setStatus(determineStatus(result.getRiskScore()));
             return result;
         }
@@ -51,12 +52,12 @@ public class VerificationService {
 
         verifyRollNumber(extractedData, dbCert, result);
         verifyName(extractedData, dbCert, result);
-        verifyMarks(extractedData, dbCert, result);
+        verifyCgpa(extractedData, dbCert, result);
         verifyCourse(extractedData, dbCert, result);
         verifyUniversity(extractedData, dbCert, result);
         verifyHash(extractedData, dbCert, result);
 
-        result.setRiskScore(riskScoringService.calculateScore(result));
+        result.setRiskScore(riskScoringService.calculateScore(result, ocrAverageConfidence));
         result.setStatus(determineStatus(result.getRiskScore()));
 
         logger.info("Verification result: {}", result);
@@ -73,14 +74,14 @@ public class VerificationService {
 
     private void verifyName(ExtractedData extracted, Certificate dbCert, VerificationResult result) {
         if (extracted.getName() != null) {
-            String extractedName = extracted.getName().trim();
-            String dbName = dbCert.getName().toUpperCase().trim();
+            String extractedName = normalizeText(extracted.getName());
+            String dbName = normalizeText(dbCert.getName());
 
-            if (extractedName.equals(dbName)) {
+            if (extractedName.isEmpty() || dbName.isEmpty() || extractedName.equals(dbName)) {
                 return;
             }
 
-            LevenshteinDistance ld = new LevenshteinDistance();
+            LevenshteinDistance ld = LevenshteinDistance.getDefaultInstance();
             int distance = ld.apply(extractedName, dbName);
 
             if (distance > 3) {
@@ -90,65 +91,60 @@ public class VerificationService {
         }
     }
 
-    private void verifyMarks(ExtractedData extracted, Certificate dbCert, VerificationResult result) {
-        if (extracted.getMarks() != null &&
-                !extracted.getMarks().equals(dbCert.getMarks())) {
-            result.addIssue("Marks mismatch: Expected " + dbCert.getMarks() +
-                    ", Found " + extracted.getMarks());
+    private void verifyCgpa(ExtractedData extracted, Certificate dbCert, VerificationResult result) {
+        if (extracted.getCgpa() != null &&
+                !extracted.getCgpa().equals(dbCert.getCgpa())) {
+            result.addIssue("CGPA mismatch: Expected " + dbCert.getCgpa() +
+                    ", Found " + extracted.getCgpa());
         }
     }
 
     private void verifyCourse(ExtractedData extracted, Certificate dbCert, VerificationResult result) {
-        if (extracted.getCourse() != null &&
-                !extracted.getCourse().contains(dbCert.getCourse().toUpperCase())) {
+        if (extracted.getCourse() != null && dbCert.getCourse() != null) {
+            String extractedCourse = normalizeText(extracted.getCourse());
+            String dbCourse = normalizeText(dbCert.getCourse());
+
+            if (!extractedCourse.contains(dbCourse) && !dbCourse.contains(extractedCourse)) {
             result.addIssue("Course mismatch: Expected " + dbCert.getCourse() +
                     ", Found " + extracted.getCourse());
+            }
         }
     }
 
     private void verifyUniversity(ExtractedData extracted, Certificate dbCert, VerificationResult result) {
-        if (extracted.getUniversity() != null &&
-                !extracted.getUniversity().contains(dbCert.getUniversity().toUpperCase())) {
+        if (extracted.getUniversity() != null && dbCert.getUniversity() != null) {
+            String extractedUniversity = normalizeText(extracted.getUniversity());
+            String dbUniversity = normalizeText(dbCert.getUniversity());
+
+            if (!extractedUniversity.contains(dbUniversity) && !dbUniversity.contains(extractedUniversity)) {
             result.addIssue("University mismatch: Expected " + dbCert.getUniversity() +
                     ", Found " + extracted.getUniversity());
+            }
         }
     }
 
     private void verifyHash(ExtractedData extracted, Certificate dbCert, VerificationResult result) {
-        if (dbCert.getHashValue() != null && !dbCert.getHashValue().isEmpty()) {
-            String calculatedHash = calculateHash(extracted);
+        String extractedHash = certificateHashService.calculateHash(extracted);
+        String dbCanonicalHash = certificateHashService.calculateHash(dbCert);
+        String storedHash = dbCert.getHashValue();
 
-            if (!calculatedHash.equals(dbCert.getHashValue())) {
-                result.addIssue("Document hash mismatch - possible tampering detected");
-            }
+        // Backward compatibility: older rows may contain non-canonical hash values.
+        // Prefer canonical comparison between DB fields and extracted fields.
+        boolean hashMatches = extractedHash.equals(dbCanonicalHash)
+                || (storedHash != null && !storedHash.isEmpty() && extractedHash.equals(storedHash));
+
+        if (!hashMatches) {
+            result.addIssue("Document hash mismatch - possible tampering detected");
         }
     }
 
-    private String calculateHash(ExtractedData data) {
-        try {
-            String dataString = String.format("%s%s%s%s%s",
-                    data.getCertId(),
-                    data.getRollNo(),
-                    data.getName(),
-                    data.getMarks(),
-                    data.getCourse()
-            );
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(dataString.getBytes(StandardCharsets.UTF_8));
-
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("Error calculating hash", e);
+    private String normalizeText(String value) {
+        if (value == null) {
             return "";
         }
+        return value.toUpperCase(Locale.ROOT)
+                .replaceAll("[^A-Z0-9]", "")
+                .trim();
     }
 
     private String determineStatus(int riskScore) {

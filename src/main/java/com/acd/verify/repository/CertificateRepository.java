@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface CertificateRepository extends JpaRepository<Certificate, Long> {
     Optional<Certificate> findByCertId(String certId);
     Optional<Certificate> findByRollNo(String rollNo);
+    boolean existsByCertId(String certId);
+    boolean existsByRollNo(String rollNo);
 }

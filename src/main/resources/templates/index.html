@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification Portal</title>
+</head>
+<body>
+<h1>Public Certificate Verification</h1>
+<p>Anyone can upload a certificate and verify authenticity without login.</p>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<form th:action="@{/upload}" method="post" enctype="multipart/form-data">
+    <label for="certificate">Upload certificate (PDF/JPG/PNG)</label>
+    <input id="certificate" type="file" name="certificate" required>
+    <button type="submit">Verify Now</button>
+</form>
+
+<hr>
+
+<h2>University / College Access</h2>
+<p>Universities and colleges must login to upload student certificate details to the database.</p>
+<p>
+    <a th:href="@{/login}">University Login</a> |
+    <a th:href="@{/register}">Create University Account</a>
+</p>
+</body>
+</html>

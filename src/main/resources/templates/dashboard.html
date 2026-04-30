@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+<h1>User Dashboard</h1>
+<p th:if="${user != null}">Welcome, <strong th:text="${user.username}">user</strong></p>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<form th:action="@{/upload}" method="post" enctype="multipart/form-data">
+    <label for="certificate">Upload certificate</label>
+    <input id="certificate" type="file" name="certificate" required>
+    <button type="submit">Verify</button>
+</form>
+
+<p>
+    <a th:href="@{/home}">Home</a> |
+    <a th:href="@{/logout}">Logout</a>
+</p>
+</body>
+</html>

@@ -13,131 +13,136 @@ public class DataExtractionService {
 
     private static final Logger logger = LoggerFactory.getLogger(DataExtractionService.class);
 
+    // --- Precompiled Regex Patterns (Thread-safe & Fast) ---
+    
+    private static final Pattern CERT_ID_PATTERN_1 = Pattern.compile(
+            "CERTIFICATE\\s+(?:NO\\.?|NUMBER|ID)\\s*[:\\-]?\\s*([A-Z0-9]{4,20})", Pattern.CASE_INSENSITIVE);
+    
+    private static final Pattern CERT_ID_PATTERN_2 = Pattern.compile(
+            "\\b([A-Z]{2,4}[0-9]{4,10})\\b", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern ROLL_NO_PATTERN = Pattern.compile(
+            "(?:ROLL|REGISTRATION|REG)\\s*(?:NO\\.?|NUMBER)\\s*[:\\-]?\\s*([A-Z0-9]{4,20})", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern NAME_PATTERN = Pattern.compile(
+            "(?:NAME|STUDENT NAME)\\s*[:\\-]?\\s*([A-Z][A-Z\\s.]{2,40})(?=\\s|$|ROLL|ID|COURSE|DATE)", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern UNIVERSITY_PATTERN = Pattern.compile(
+            "([A-Z][A-Z\\s]{5,60}UNIVERSITY)", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern CGPA_PATTERN = Pattern.compile(
+            "(?:CGPA|GPA|MARKS?|PERCENTAGE)\\s*[:\\-]?\\s*([0-9]{1,3}(?:\\.[0-9]{1,2})?)", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern DATE_PATTERN = Pattern.compile(
+            "\\b([0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{2,4})\\b|\\b([0-9]{1,2}\\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\\s+[0-9]{4})\\b", Pattern.CASE_INSENSITIVE);
+
+    private static final String[] COURSE_KEYWORDS = {
+            "BACHELOR OF TECHNOLOGY", "B.TECH", "BTECH", "MASTER OF TECHNOLOGY", "M.TECH", 
+            "BACHELOR OF SCIENCE", "B.SC", "MASTER OF SCIENCE", "M.SC",
+            "BACHELOR OF ARTS", "B.A.", "MASTER OF BUSINESS ADMINISTRATION", "MBA",
+            "BACHELOR OF COMMERCE", "B.COM", "MASTER OF COMPUTER APPLICATIONS", "MCA"
+    };
+
     public ExtractedData extractFields(String rawText) {
         ExtractedData data = new ExtractedData();
         data.setRawText(rawText);
 
-        // Normalize text
-        String normalizedText = rawText.toUpperCase().replaceAll("\\s+", " ");
+        if (rawText == null || rawText.isBlank()) {
+            logger.warn("Input text is empty");
+            return data;
+        }
 
-        // Extract Certificate ID
-        data.setCertId(extractCertificateId(normalizedText));
+        // Clean text but keep numbers and casing for specific extractions
+        String cleanedText = rawText.replaceAll("\\s+", " ").trim();
+        String upperText = cleanedText.toUpperCase();
 
-        // Extract Roll Number
-        data.setRollNo(extractRollNumber(normalizedText));
+        logger.debug("Starting extraction on cleaned text");
 
-        // Extract Name
-        data.setName(extractName(normalizedText));
-
-        // Extract Course
-        data.setCourse(extractCourse(normalizedText));
-
-        // Extract Marks
-        data.setMarks(extractMarks(normalizedText));
-
-        // Extract University
-        data.setUniversity(extractUniversity(normalizedText));
-
-        // Extract Issue Date
-        data.setIssueDate(extractIssueDate(normalizedText));
-
-        logger.info("Extracted data: {}", data);
+        data.setCertId(extractCertId(upperText));
+        data.setRollNo(extractRollNo(upperText));
+        data.setName(extractName(cleanedText)); // Extract from cleaned original to keep "John Doe"
+        data.setCourse(extractCourse(upperText));
+        data.setCgpa(extractCgpa(upperText));
+        data.setUniversity(extractUniversity(cleanedText)); // Keep original casing
+        data.setIssueDate(extractDate(upperText));
+        data.setNormalizedText(upperText);
 
         return data;
     }
 
-    private String extractCertificateId(String text) {
-        Pattern pattern = Pattern.compile("CERT(?:IFICATE)?[\\s\\-_:]*(?:ID|NO|NUMBER)?[\\s\\-_:]*([A-Z0-9]{4,20})");
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            return matcher.group(1).trim();
+    private String extractCertId(String text) {
+        String result = matchGroup(CERT_ID_PATTERN_1, text, 1);
+        if (result == null) {
+            result = matchGroup(CERT_ID_PATTERN_2, text, 1);
+            // Validation: Ensure it's not a known false positive
+            if (result != null && (result.contains("ROLL") || result.contains("REG"))) return null;
         }
-
-        return null;
+        return result;
     }
 
-    private String extractRollNumber(String text) {
-        Pattern pattern = Pattern.compile("ROLL[\\s\\-_]*(?:NO|NUMBER)?[\\s\\-_:]*([A-Z0-9]{4,20})");
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-
-        return null;
+    private String extractRollNo(String text) {
+        return matchGroup(ROLL_NO_PATTERN, text, 1);
     }
 
     private String extractName(String text) {
-        Pattern pattern = Pattern.compile("(?:NAME|STUDENT)[\\s\\-_:]*([A-Z][A-Z\\s]{5,50})");
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            return matcher.group(1).trim();
+        String name = matchGroup(NAME_PATTERN, text, 1);
+        if (name != null) {
+            // Remove common OCR artifacts or trailing keywords
+            return name.replaceAll("(?i)(ROLL|NO|ID|COURSE|UNIVERSITY).*", "").trim();
         }
-
-        pattern = Pattern.compile("(?:CERTIFY THAT|AWARDED TO)[\\s\\-_:]*([A-Z][A-Z\\s]{5,50})");
-        matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-
-        return null;
+        // Fallback: Check "This is to certify that..."
+        Pattern certPattern = Pattern.compile("(?:CERTIFY THAT|AWARDED TO)\\s+([A-Z][A-Z\\s]{2,40})", Pattern.CASE_INSENSITIVE);
+        return matchGroup(certPattern, text, 1);
     }
 
     private String extractCourse(String text) {
-        String[] courseKeywords = {
-                "BACHELOR OF TECHNOLOGY", "B.TECH", "BTECH",
-                "BACHELOR OF SCIENCE", "B.SC", "BSC",
-                "MASTER OF TECHNOLOGY", "M.TECH", "MTECH",
-                "BACHELOR OF ARTS", "B.A", "BA",
-                "MASTER OF BUSINESS ADMINISTRATION", "MBA"
-        };
-
-        for (String course : courseKeywords) {
-            if (text.contains(course)) {
-                return course;
-            }
+        // High specificity search first
+        for (String course : COURSE_KEYWORDS) {
+            if (text.contains(course)) return course;
         }
-
         return null;
     }
 
-    private Double extractMarks(String text) {
-        Pattern pattern = Pattern.compile("(?:MARKS?|PERCENTAGE|CGPA|SCORE)[\\s\\-_:]*([0-9]{1,3}\\.?[0-9]{0,2})");
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
+    private Double extractCgpa(String text) {
+        String val = matchGroup(CGPA_PATTERN, text, 1);
+        if (val != null) {
             try {
-                return Double.parseDouble(matcher.group(1));
-            } catch (NumberFormatException e) {
-                logger.warn("Failed to parse marks: {}", matcher.group(1));
-            }
+                double d = Double.parseDouble(val);
+                // Basic validation: CGPA usually <= 10, Percentage <= 100
+                if (d > 0 && d <= 100) return d;
+            } catch (NumberFormatException ignored) {}
         }
-
         return null;
     }
 
     private String extractUniversity(String text) {
-        Pattern pattern = Pattern.compile("([A-Z\\s]{10,60}UNIVERSITY)");
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            return matcher.group(1).trim();
+        String uni = matchGroup(UNIVERSITY_PATTERN, text, 1);
+        if (uni != null && !uni.toUpperCase().contains("BACHELOR") && !uni.toUpperCase().contains("MASTER")) {
+            return uni.trim();
         }
-
         return null;
     }
 
-    private String extractIssueDate(String text) {
-        Pattern pattern = Pattern.compile("(?:DATE|ISSUED)[\\s\\-_:]*([0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{4})");
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            return matcher.group(1).trim();
+    private String extractDate(String text) {
+        Matcher m = DATE_PATTERN.matcher(text);
+        if (m.find()) {
+            String g1 = m.group(1);
+            String g2 = m.group(2);
+            if (g1 != null) return g1.trim();
+            if (g2 != null) return g2.trim();
         }
+        return null;
+    }
 
+    /**
+     * Helper to extract a specific group from a pattern
+     */
+    private String matchGroup(Pattern pattern, String text, int group) {
+        Matcher matcher = pattern.matcher(text);
+        if (matcher.find()) {
+            String g = matcher.group(group);
+            return (g == null) ? null : g.trim();
+        }
         return null;
     }
 }
