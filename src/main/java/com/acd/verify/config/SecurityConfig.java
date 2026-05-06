@@ -13,7 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
- 
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -33,7 +33,6 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        // Pass the UserDetailsService to the constructor
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
@@ -45,20 +44,46 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationSuccessHandler roleBasedSuccessHandler() {
+        return (request, response, authentication) -> {
+            var authorities = authentication.getAuthorities();
+            String targetUrl = "/home";
+
+            for (var authority : authorities) {
+                String role = authority.getAuthority();
+                if ("ROLE_ADMIN".equals(role)) {
+                    targetUrl = "/admin/dashboard";
+                    break;
+                } else if ("ROLE_STUDENT".equals(role)) {
+                    targetUrl = "/student/dashboard";
+                    break;
+                } else if ("ROLE_USER".equals(role)) {
+                    targetUrl = "/university/dashboard";
+                    break;
+                }
+            }
+
+            response.sendRedirect(targetUrl);
+        };
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/", "/home", "/login", "/register",
-                                "/css/**", "/js/**", "/images/**", "/error").permitAll()
+                        .requestMatchers("/", "/home", "/login", "/register", "/register/student",
+                                "/css/**", "/js/**", "/images/**", "/error",
+                                "/verify", "/verify/**",
+                                "/upload", "/result/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/upload", "/result/**").permitAll()
-                        .requestMatchers("/dashboard", "/university/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/university/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/student/**").hasRole("STUDENT")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/university/dashboard", true)
+                        .successHandler(roleBasedSuccessHandler())
                         .failureUrl("/login?error=true")
                         .permitAll()
                 )

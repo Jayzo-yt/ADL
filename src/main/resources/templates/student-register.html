@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - CertiVerify</title>
+    <title>Student Register - CertiVerify</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
 </head>
 <body>
@@ -24,50 +24,41 @@
     <div class="auth-wrapper">
         <div class="card card-glass max-w-3xl w-full">
             <div class="card-header">
-                <h2 style="font-size: 1.875rem;">👤 Create Student Account</h2>
-                <p class="mt-2" style="color: var(--text-muted);">Sign up to view and download your certificates issued by your institution</p>
+                <h2 style="font-size: 1.875rem;">Create Student Account</h2>
+                <p class="mt-2" style="color: var(--text-muted);">Sign up to view and download your certificates</p>
             </div>
             <div class="card-body" style="padding-top: 0;">
-
                 <form th:action="@{/register/student}" th:object="${user}" method="post">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                        
                         <div class="form-group mb-0">
-                            <label class="form-label">Username *</label>
+                            <label class="form-label">Username</label>
                             <input type="text" th:field="*{username}" class="form-control" placeholder="Student username" required>
                         </div>
-                        
                         <div class="form-group mb-0">
-                            <label class="form-label">Email *</label>
+                            <label class="form-label">Email</label>
                             <input type="email" th:field="*{email}" class="form-control" placeholder="student@university.edu" required>
                         </div>
-
                         <div class="form-group mb-0">
-                            <label class="form-label">Password *</label>
+                            <label class="form-label">Password</label>
                             <input type="password" th:field="*{password}" class="form-control" placeholder="••••••••" required>
                         </div>
-
                         <div class="form-group mb-0">
-                            <label class="form-label">Confirm Password *</label>
+                            <label class="form-label">Confirm Password</label>
                             <input type="password" th:field="*{confirmPassword}" class="form-control" placeholder="••••••••" required>
                         </div>
-
                         <div class="form-group mb-0">
                             <label class="form-label">Full Name</label>
-                            <input type="text" th:field="*{fullName}" class="form-control" placeholder="Your full name">
+                            <input type="text" th:field="*{fullName}" class="form-control" placeholder="Student full name">
                         </div>
-
                         <div class="form-group mb-0">
                             <label class="form-label">Phone Number</label>
                             <input type="text" th:field="*{phoneNumber}" class="form-control" placeholder="10-digit mobile number">
-                                                <div class="form-group mb-0" style="grid-column: span 2;">
-                                                    <label class="form-label">Institution / College</label>
-                                                    <input type="text" th:field="*{organization}" class="form-control" placeholder="Your university or college name">
-                                                </div>
                         </div>
-
+                        <div class="form-group mb-0" style="grid-column: span 2;">
+                            <label class="form-label">Institution / Organization</label>
+                            <input type="text" th:field="*{organization}" class="form-control" placeholder="Your university or college">
+                        </div>
                     </div>
-                    
                     <div class="mt-8">
                         <button type="submit" class="btn btn-primary w-full" style="padding: 0.875rem;">
                             Create Student Account
@@ -77,8 +68,8 @@
 
                 <div class="text-center mt-8">
                     <p style="color: var(--text-muted); font-size: 0.875rem;">
-                        Already have an account?
-                        <a th:href="@{/login}" href="login.html" style="font-weight: 600;">Sign in here</a>
+                        Already registered?
+                        <a th:href="@{/login}" href="login.html" style="font-weight: 600;">Sign in</a>
                     </p>
                 </div>
             </div>

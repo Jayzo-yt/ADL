@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -25,6 +26,14 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public User registerUser(UserRegistrationDto registrationDto) {
+        return registerWithRole(registrationDto, "ROLE_USER");
+    }
+
+    public User registerStudent(UserRegistrationDto registrationDto) {
+        return registerWithRole(registrationDto, "ROLE_STUDENT");
+    }
+
+    private User registerWithRole(UserRegistrationDto registrationDto, String roleName) {
         if (userRepository.existsByUsername(registrationDto.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
@@ -46,11 +55,10 @@ public class UserService {
         user.setOrganization(registrationDto.getOrganization());
         user.setEnabled(true);
 
-        // Assign default USER role
         Set<UserRole> roles = new HashSet<>();
-        UserRole userRole = roleRepository.findByName("ROLE_USER")
+        UserRole userRole = roleRepository.findByName(roleName)
                 .orElseGet(() -> {
-                    UserRole newRole = new UserRole("ROLE_USER");
+                    UserRole newRole = new UserRole(roleName);
                     return roleRepository.save(newRole);
                 });
         roles.add(userRole);
@@ -62,5 +70,26 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public List<User> findAllByRole(String roleName) {
+        return userRepository.findAllByRoles_Name(roleName);
+    }
+
+    public List<User> findAll() {
+        return userRepository.findAll();
+    }
+
+    public long count() {
+        return userRepository.count();
+    }
+
+    public long countByRole(String roleName) {
+        return userRepository.findAllByRoles_Name(roleName).size();
     }
 }

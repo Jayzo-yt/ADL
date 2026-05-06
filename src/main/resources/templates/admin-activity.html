@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Activity - CertiVerify</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <div class="navbar-brand">
+                <a href="index.html" th:href="@{/}" style="display:flex; align-items:center; gap:0.75rem; text-decoration:none;">
+                    <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    CertiVerify Admin
+                </a>
+            </div>
+            <div class="navbar-nav">
+                <a th:href="@{/admin/dashboard}" class="btn btn-secondary btn-sm">Dashboard</a>
+                <form th:action="@{/logout}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content" style="align-items: flex-start;">
+        <div class="container">
+            <div style="margin-bottom: 2rem;">
+                <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">📋 System Activity Log</h1>
+                <p style="color: var(--text-muted);">Complete audit trail of all system events including certificate uploads, verifications, and user actions.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header" style="padding: 1.5rem; text-align: left;">
+                    <h3 style="margin: 0;">Recent Activities</h3>
+                </div>
+                <div class="table-wrapper" style="border: none;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">ID</th>
+                                <th style="width: 200px;">Action</th>
+                                <th style="width: 150px;">User</th>
+                                <th>Details</th>
+                                <th style="width: 180px;">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="a : ${activities}">
+                                <td style="font-family: monospace; font-weight: 500; color: var(--text-muted);" th:text="${a.id}">1</td>
+                                <td>
+                                    <span th:if="${a.action == 'CERTIFICATE_UPLOADED'}" class="badge badge-success">📤 Certificate Upload</span>
+                                    <span th:if="${a.action == 'PUBLIC_VERIFICATION'}" class="badge badge-primary">🔍 Public Verification</span>
+                                    <span th:if="${a.action == 'INSTITUTION_REGISTERED'}" class="badge badge-warning">🏫 Institution Registered</span>
+                                    <span th:if="${a.action == 'STUDENT_REGISTERED'}" class="badge badge-info">👤 Student Registered</span>
+                                    <span th:if="${a.action == 'INSTITUTION_CREATED'}" class="badge badge-primary">➕ Institution Created</span>
+                                    <span th:if="${a.action == 'INSTITUTION_TOGGLED'}" class="badge badge-warning">⚙️ Institution Toggled</span>
+                                    <span th:if="${a.action == 'INSTITUTION_DELETED'}" class="badge badge-danger">🗑️ Institution Deleted</span>
+                                    <span th:if="${a.action == 'CERTIFICATE_VIEWED'}" class="badge badge-info">👁️ Certificate Viewed</span>
+                                    <span th:if="${a.action == 'CERTIFICATE_DOWNLOADED'}" class="badge badge-secondary">⬇️ Certificate Downloaded</span>
+                                    <span th:if="${a.action != 'CERTIFICATE_UPLOADED' and a.action != 'PUBLIC_VERIFICATION' and a.action != 'INSTITUTION_REGISTERED' and a.action != 'STUDENT_REGISTERED' and a.action != 'INSTITUTION_CREATED' and a.action != 'INSTITUTION_TOGGLED' and a.action != 'INSTITUTION_DELETED' and a.action != 'CERTIFICATE_VIEWED' and a.action != 'CERTIFICATE_DOWNLOADED'}" class="badge badge-secondary" th:text="${a.action}">Action</span>
+                                </td>
+                                <td style="color: var(--text-muted); font-weight: 500;" th:text="${a.username != null ? a.username : 'System'}">user</td>
+                                <td style="color: var(--text-muted); font-size: 0.875rem;" th:text="${a.details}">Details</td>
+                                <td style="color: var(--text-muted); font-size: 0.8rem; white-space: nowrap;" th:text="${a.timestamp}">2026-01-01</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div th:if="${#lists.isEmpty(activities)}" class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <h3>No activities yet</h3>
+                    <p>System activities will appear here as events occur.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
