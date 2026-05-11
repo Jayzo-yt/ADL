@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Public Verification - CertiVerify</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+    <link rel="stylesheet" th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/css/style.css}" href="style.css">
 </head>
 <body>
     <nav class="navbar">
         <div class="container navbar-container">
             <div class="navbar-brand">
-                <a th:href="@{/}" style="display:flex; align-items:center; gap:0.75rem; text-decoration:none;">
+                <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/}" style="display:flex; align-items:center; gap:0.75rem; text-decoration:none;">
                     <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                     CertiVerify
                 </a>
             </div>
             <div class="navbar-nav">
-                <a th:href="@{/login}" class="btn btn-secondary">Login</a>
+                <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/login}" class="btn btn-secondary">Login</a>
             </div>
         </div>
     </nav>
@@ -28,7 +28,7 @@
                     <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">🔐 Public Certificate Verification</h1>
                     <p style="color: var(--text-muted); margin-bottom: 1.5rem;">No login required. Enter a certificate ID to instantly verify authenticity.</p>
 
-                    <form th:action="@{/verify}" method="get" class="flex" style="gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
+                    <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/verify}" method="get" class="flex" style="gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
                         <div class="flex" style="flex: 1 1 320px; flex-direction: column; gap: 0.5rem;">
                             <label class="form-label" style="margin-bottom: 0;">Certificate ID</label>
                             <input type="text" name="id" class="form-control" placeholder="e.g., STANFORD-20260507-ABC12D3E" th:value="${searchedId}">

@@ -55,6 +55,6 @@ public class QRCodeService {
      * Generate a QR code for a certificate ID using localhost as the default base URL.
      */
     public String generateQRCodeBase64(String certId) {
-        return generateQRCodeBase64(certId, "http://localhost:8080");
+        return generateQRCodeBase64(certId, "https://adl-dep-50042114867.development.catalystappsail.in");
     }
 }

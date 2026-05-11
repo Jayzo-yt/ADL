@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Certificate Verification</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+    <link rel="stylesheet" th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/css/style.css}" href="style.css">
 </head>
 <body>
     <nav class="navbar">
@@ -16,12 +16,12 @@
             </div>
             <div class="navbar-nav">
                 <div sec:authorize="!isAuthenticated()" class="auth-links">
-                    <a th:href="@{/login}" href="login.html" class="btn btn-secondary">Login</a>
-                    <a th:href="@{/register/student}" href="register.html" class="btn btn-primary">Student Register</a>
+                    <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/login}" href="login.html" class="btn btn-secondary">Login</a>
+                    <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/register/student}" href="register.html" class="btn btn-primary">Student Register</a>
                 </div>
                 <div sec:authorize="isAuthenticated()" class="auth-links">
-                    <a th:href="@{/dashboard}" href="dashboard.html" class="btn btn-secondary">Dashboard</a>
-                    <form th:action="@{/logout}" method="post" style="display: inline;">
+                    <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/dashboard}" href="dashboard.html" class="btn btn-secondary">Dashboard</a>
+                    <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/logout}" method="post" style="display: inline;">
                         <button type="submit" class="btn btn-secondary">Logout</button>
                     </form>
                 </div>
@@ -53,8 +53,8 @@
                                                 <li>✓ Access QR codes</li>
                                             </ul>
                                             <div class="flex" style="gap: 0.5rem; flex-direction: column;">
-                                                <a th:href="@{/register/student}" class="btn btn-primary">Register as Student</a>
-                                                <a th:href="@{/login}" class="btn btn-outline">Student Login</a>
+                                                <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/register/student}" class="btn btn-primary">Register as Student</a>
+                                                <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/login}" class="btn btn-outline">Student Login</a>
                                             </div>
                                         </div>
                                     </div>
@@ -74,7 +74,7 @@
                                             </ul>
                                             <div class="flex" style="gap: 0.5rem; flex-direction: column;">
                                                 
-                                                <a th:href="@{/login}" class="btn btn-outline">Institution Login</a>
+                                                <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/login}" class="btn btn-outline">Institution Login</a>
                                             </div>
                                            
                                         </div>
@@ -87,7 +87,7 @@
                         <p class="mt-2" style="color: var(--text-muted);">Upload a certificate image/PDF for OCR-based extraction and authenticity analysis</p>
                     </div>
                     <div class="card-body">
-                        <form th:action="@{/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
                             <div class="form-group">
                                 <label class="upload-area" for="certificate">
                                     <div class="upload-icon">
@@ -115,7 +115,7 @@
                         <p class="mt-2" style="color: var(--text-muted);">No login required - Enter a certificate ID or scan QR code to verify authenticity instantly</p>
                     </div>
                     <div class="card-body">
-                        <form th:action="@{/verify}" method="get">
+                        <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/verify}" method="get">
                             <div class="form-group">
                                 <label for="certId" class="form-label">Certificate ID</label>
                                 <input type="text" id="certId" name="id" class="form-control" placeholder="e.g., STANFORD-20260507-ABC12D3E" required>
@@ -135,6 +135,6 @@
         </div>
     </main>
 
-    <script th:src="@{/js/script.js}" src="script.js"></script>
+    <script th:src="@{https://adl-dep-50042114867.development.catalystappsail.in/js/script.js}" src="script.js"></script>
 </body>
 </html>

@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Institution Dashboard - CertiVerify</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+    <link rel="stylesheet" th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/css/style.css}" href="style.css">
 </head>
 <body>
     <nav class="navbar">
         <div class="container navbar-container">
             <div class="navbar-brand">
-                <a href="index.html" th:href="@{/home}" style="display:flex; align-items:center; gap:0.75rem; text-decoration:none;">
+                <a href="index.html" th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/home}" style="display:flex; align-items:center; gap:0.75rem; text-decoration:none;">
                     <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                     CertiVerify
                 </a>
@@ -21,8 +21,8 @@
                     Logged in as <strong th:text="${user.username}" style="color: var(--primary);">user</strong>
                 </span>
                 <div class="auth-links">
-                    <a th:href="@{/home}" href="index.html" class="btn btn-secondary">Public Home</a>
-                    <form th:action="@{/logout}" method="post" style="display: inline;">
+                    <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/home}" href="index.html" class="btn btn-secondary">Public Home</a>
+                    <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/logout}" method="post" style="display: inline;">
                         <button type="submit" class="btn btn-secondary">Logout</button>
                     </form>
                 </div>
@@ -57,7 +57,7 @@
                         <p class="mt-2" style="color: var(--text-muted); font-size: 0.875rem;">Enter the official academic details into the secure registry.</p>
                     </div>
                     <div class="card-body">
-                        <form th:action="@{/university/certificates/add}" th:object="${certificate}" method="post">
+                        <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/university/certificates/add}" th:object="${certificate}" method="post">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                                 
                                 <div class="form-group mb-0">
@@ -119,7 +119,7 @@
                         <p class="mt-2" style="color: var(--text-muted); font-size: 0.875rem;">Instantly verify an uploaded document against the database.</p>
                     </div>
                     <div class="card-body">
-                        <form th:action="@{/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
                             <div class="form-group">
                                 <label class="upload-area" for="certificateFile" style="padding: 2rem 1rem;">
                                     <div class="upload-icon" style="width: 2.5rem; height: 2.5rem; margin-bottom: 0.5rem;">
@@ -139,6 +139,7 @@
         </div>
     </main>
 
-    <script th:src="@{/js/script.js}" src="script.js"></script>
+    <script th:src="@{https://adl-dep-50042114867.development.catalystappsail.in/js/script.js}" src="script.js"></script>
 </body>
 </html>
+

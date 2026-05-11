@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CertiVerify</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+    <link rel="stylesheet" th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/css/style.css}" href="style.css">
 </head>
 <body>
     <nav class="navbar">
@@ -17,7 +17,7 @@
             <div class="navbar-nav">
                 <span style="font-weight: 500; font-size: 0.875rem;" th:text="${user.fullName != null ? user.fullName : user.username}">Admin User</span>
                 <div class="auth-links">
-                    <form th:action="@{/logout}" method="post" style="display: inline;">
+                    <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/logout}" method="post" style="display: inline;">
                         <button type="submit" class="btn btn-secondary">Logout</button>
                     </form>
                 </div>
@@ -41,7 +41,7 @@
                             <span th:text="${error}"></span>
                         </div>
 
-                        <form th:action="@{/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <form th:action="@{https://adl-dep-50042114867.development.catalystappsail.in/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
                             <div class="form-group">
                                 <label class="upload-area" for="certificate">
                                     <div class="upload-icon" style="width: 3rem; height: 3rem;">
@@ -67,7 +67,7 @@
                                 <h3 style="font-size: 1.125rem; margin-bottom: 0.25rem;">Admin Logs</h3>
                                 <p style="color: var(--text-muted); font-size: 0.875rem;">View all verification history</p>
                             </div>
-                            <a th:href="@{/admin/logs}" href="admin.html" class="btn btn-secondary">View Logs</a>
+                            <a th:href="@{https://adl-dep-50042114867.development.catalystappsail.in/admin/logs}" href="admin.html" class="btn btn-secondary">View Logs</a>
                         </div>
                     </div>
 
@@ -96,6 +96,6 @@
         </div>
     </main>
 
-    <script th:src="@{/js/script.js}" src="script.js"></script>
+    <script th:src="@{https://adl-dep-50042114867.development.catalystappsail.in/js/script.js}" src="script.js"></script>
 </body>
 </html>
