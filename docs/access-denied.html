@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied - CertiVerify</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+</head>
+<body style="align-items: center; justify-content: center;">
+    <div class="container text-center">
+        <div class="card max-w-md mx-auto" style="padding: 4rem 2rem;">
+            
+            <div style="color: var(--danger); margin-bottom: 2rem;">
+                <svg style="width: 6rem; height: 6rem; margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            
+            <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">Access Denied</h1>
+            <p style="color: var(--text-muted); font-size: 1.125rem; margin-bottom: 2rem;">You do not have permission to view this resource. Please ensure you are logged in with the correct account credentials.</p>
+            
+            <div class="flex" style="justify-content: center; gap: 1rem;">
+                <a th:href="@{/dashboard}" href="dashboard.html" class="btn btn-secondary">Go to Dashboard</a>
+                <a th:href="@{/}" href="index.html" class="btn btn-primary">Return Home</a>
+            </div>
+            
+        </div>
+    </div>
+</body>
+</html>

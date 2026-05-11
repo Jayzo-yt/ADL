@@ -9,14 +9,13 @@ public class ServerPortCustomizer implements WebServerFactoryCustomizer<Configur
     @Override
     public void customize(ConfigurableServletWebServerFactory factory) {
         String port = System.getenv("X_ZOHO_CATALYST_LISTEN_PORT");
-        int listenPort = 9000;
-        if (port != null && !port.isBlank()) {
-            try {
-                listenPort = Integer.parseInt(port.trim());
-            } catch (NumberFormatException ignored) {
-                // Keep default port if env var is invalid.
-            }
+        if (port == null || port.isBlank()) {
+            return;
         }
-        factory.setPort(listenPort);
+        try {
+            factory.setPort(Integer.parseInt(port.trim()));
+        } catch (NumberFormatException ignored) {
+            // Ignore invalid env value and keep the configured server.port.
+        }
     }
 }
