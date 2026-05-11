@@ -32,7 +32,7 @@
     <main class="main-content">
         <div class="container">
             <div class="hero">
-                <h1>🎓 Enterprise Certificate Verification System</h1>
+                <h1>🎓 Certificate Verification System</h1>
                 <p>Secure, instant authentication of academic credentials with AI-powered OCR technology</p>
             </div>
 
@@ -72,9 +72,11 @@
                                                 <li>✓ Generate unique IDs & QR</li>
                                                 <li>✓ Auto-compute hash values</li>
                                             </ul>
-                                            <p style="color: var(--primary); font-weight: 600; font-size: 0.875rem;">
-                                                <a th:href="@{/login}" style="color: var(--primary);">Login with admin-provided credentials</a>
-                                            </p>
+                                            <div class="flex" style="gap: 0.5rem; flex-direction: column;">
+                                                
+                                                <a th:href="@{/login}" class="btn btn-outline">Institution Login</a>
+                                            </div>
+                                           
                                         </div>
                                     </div>
                 </div>

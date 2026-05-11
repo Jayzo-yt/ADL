@@ -265,20 +265,36 @@ a:hover {
 }
 
 /* File Upload Area */
-.upload-area {
-    border: 2px dashed var(--border);
-    border-radius: 1rem;
-    padding: 3rem 2rem;
-    text-align: center;
-    background: rgba(255, 255, 255, 0.5);
-    transition: all 0.2s ease;
-    cursor: pointer;
+.upload-container {
     position: relative;
+    border: 2px dashed var(--border);
+    border-radius: 1.125rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.02) 0%, rgba(14, 165, 233, 0.02) 100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.upload-area:hover, .upload-area.dragover {
+.upload-container:hover {
     border-color: var(--primary);
-    background: rgba(79, 70, 229, 0.02);
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(14, 165, 233, 0.05) 100%);
+    box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.1);
+}
+
+.upload-container.dragover {
+    border-color: var(--secondary);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(79, 70, 229, 0.08) 100%);
+    box-shadow: 0 0 30px rgba(14, 165, 233, 0.2);
+    transform: scale(1.01);
+}
+
+.upload-area {
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    display: block;
+    overflow: visible;
 }
 
 .upload-area input[type="file"] {
@@ -295,10 +311,23 @@ a:hover {
 .upload-icon {
     width: 4rem;
     height: 4rem;
-    margin: 0 auto 1rem;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: float 3s ease-in-out infinite;
+}
+
+.upload-icon svg {
+    width: 100%;
+    height: 100%;
+    color: var(--primary);
+    stroke: currentColor;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
 }
 
 /* Badges */
