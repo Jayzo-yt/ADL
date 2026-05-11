@@ -1,6 +1,7 @@
 package com.acd.verify.model;
 
 import jakarta.persistence.*;
+
 @Entity
 @Table(name = "certificates")
 public class Certificate {
@@ -32,6 +33,18 @@ public class Certificate {
 
     @Column(name = "issue_date")
     private String issueDate;
+
+    @Column(name = "student_email")
+    private String studentEmail;
+
+    @Column(name = "qr_code_data", columnDefinition = "TEXT")
+    private String qrCodeData;
+
+    @Column(name = "institution_id")
+    private Long institutionId;
+
+    @Column(name = "status")
+    private String status = "ACTIVE";
 
     public Certificate() {
     }
@@ -66,4 +79,12 @@ public class Certificate {
     public void setHashValue(String hashValue) { this.hashValue = hashValue; }
     public String getIssueDate() { return issueDate; }
     public void setIssueDate(String issueDate) { this.issueDate = issueDate; }
+    public String getStudentEmail() { return studentEmail; }
+    public void setStudentEmail(String studentEmail) { this.studentEmail = studentEmail; }
+    public String getQrCodeData() { return qrCodeData; }
+    public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
+    public Long getInstitutionId() { return institutionId; }
+    public void setInstitutionId(Long institutionId) { this.institutionId = institutionId; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

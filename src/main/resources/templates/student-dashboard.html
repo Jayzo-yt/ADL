@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - CertiVerify</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <div class="navbar-brand">
+                <a href="index.html" th:href="@{/home}" style="display:flex; align-items:center; gap:0.75rem; text-decoration:none;">
+                    <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    CertiVerify
+                </a>
+            </div>
+            <div class="navbar-nav">
+                <span style="font-weight: 500; font-size: 0.875rem;" th:if="${email != null}">Logged in as <strong th:text="${email}" style="color: var(--primary);">student@example.com</strong></span>
+                <form th:action="@{/logout}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-secondary">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content" style="align-items: flex-start;">
+        <div class="container">
+            <div class="flex" style="align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                <div>
+                    <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Student Dashboard</h1>
+                    <p style="color: var(--text-muted);">View, verify, and download your issued certificates.</p>
+                </div>
+                <div class="card" style="padding: 1rem 1.25rem; min-width: 180px;">
+                    <div style="color: var(--text-muted); font-size: 0.875rem;">Certificates</div>
+                    <div style="font-size: 1.75rem; font-weight: 700;" th:text="${totalCertificates}">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div th:if="${#lists.isEmpty(certificates)}" class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <h3>No certificates found</h3>
+                        <p>Your institution has not linked any certificates to your email yet.</p>
+                    </div>
+
+                    <div th:unless="${#lists.isEmpty(certificates)}" class="table-wrapper" style="border: none;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Certificate ID</th>
+                                    <th>Course</th>
+                                    <th>Institution</th>
+                                    <th>Issue Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="cert : ${certificates}">
+                                    <td style="font-family: monospace; font-weight: 600;" th:text="${cert.certId}">CERT-001</td>
+                                    <td th:text="${cert.course}">Course</td>
+                                    <td th:text="${cert.university}">Institution</td>
+                                    <td th:text="${cert.issueDate}">2026-05-07</td>
+                                    <td>
+                                        <span th:if="${cert.status == 'ACTIVE'}" class="badge badge-success">ACTIVE</span>
+                                        <span th:unless="${cert.status == 'ACTIVE'}" class="badge badge-danger" th:text="${cert.status}">INACTIVE</span>
+                                    </td>
+                                    <td>
+                                        <div class="flex" style="gap: 0.5rem; flex-wrap: wrap;">
+                                            <a th:href="@{/student/certificate/{certId}(certId=${cert.certId})}" class="btn btn-outline btn-sm">View</a>
+                                            <a th:href="@{/student/certificate/{certId}/download(certId=${cert.certId})}" class="btn btn-secondary btn-sm">Download</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

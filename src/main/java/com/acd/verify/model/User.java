@@ -41,6 +41,9 @@ public class User {
     @Column(name = "organization")
     private String organization;
 
+    @Column(name = "institution_id")
+    private Long institutionId;
+
     @Column(name = "enabled")
     private boolean enabled = true;
 
@@ -108,4 +111,6 @@ public class User {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public Set<UserRole> getRoles() { return roles; }
     public void setRoles(Set<UserRole> roles) { this.roles = roles; }
+    public Long getInstitutionId() { return institutionId; }
+    public void setInstitutionId(Long institutionId) { this.institutionId = institutionId; }
 }
