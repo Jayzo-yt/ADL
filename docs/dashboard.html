@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CertiVerify</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <div class="navbar-brand">
+                <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                CertiVerify
+            </div>
+            <div class="navbar-nav">
+                <span style="font-weight: 500; font-size: 0.875rem;" th:text="${user.fullName != null ? user.fullName : user.username}">Admin User</span>
+                <div class="auth-links">
+                    <form th:action="@{/logout}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content" style="align-items: flex-start;">
+        <div class="container">
+            <div class="dashboard-grid">
+                
+                <!-- Verification Tools -->
+                <div class="card">
+                    <div class="card-header" style="text-align: left; padding-bottom: 0;">
+                        <h2 style="font-size: 1.5rem;">Document Verification</h2>
+                        <p class="mt-2" style="color: var(--text-muted);">Upload a certificate for immediate AI analysis.</p>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div th:if="${error}" class="alert alert-error">
+                            <span th:text="${error}"></span>
+                        </div>
+
+                        <form th:action="@{/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
+                            <div class="form-group">
+                                <label class="upload-area" for="certificate">
+                                    <div class="upload-icon" style="width: 3rem; height: 3rem;">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    </div>
+                                    <h3 class="mb-2" style="font-size: 1rem;">Upload Document</h3>
+                                    <p style="color: var(--text-muted); font-size: 0.875rem;">JPG, PNG, or PDF</p>
+                                    <input type="file" id="certificate" name="certificate" accept=".jpg,.jpeg,.png,.pdf" required>
+                                </label>
+                                <div id="fileName" class="text-center mt-4"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-full">Verify Document</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Quick Links & Status -->
+                <div class="dashboard-grid" style="grid-template-columns: 1fr; gap: 1.5rem; align-content: flex-start;">
+                    
+                    <div class="card" sec:authorize="hasRole('ADMIN')">
+                        <div class="card-body flex" style="align-items: center; justify-content: space-between;">
+                            <div>
+                                <h3 style="font-size: 1.125rem; margin-bottom: 0.25rem;">Admin Logs</h3>
+                                <p style="color: var(--text-muted); font-size: 0.875rem;">View all verification history</p>
+                            </div>
+                            <a th:href="@{/admin/logs}" href="admin.html" class="btn btn-secondary">View Logs</a>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 style="font-size: 1.125rem; margin-bottom: 1rem;">Profile Overview</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                                    <span style="color: var(--text-muted);">Email</span>
+                                    <span style="font-weight: 500;" th:text="${user.email}">admin@university.edu</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                                    <span style="color: var(--text-muted);">Organization</span>
+                                    <span style="font-weight: 500;" th:text="${user.organization}">Example University</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-muted);">Role</span>
+                                    <span class="badge badge-success">Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script th:src="@{/js/script.js}" src="script.js"></script>
+</body>
+</html>
