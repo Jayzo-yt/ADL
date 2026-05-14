@@ -16,8 +16,7 @@ import org.apache.pdfbox.Loader;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.awt.image.ConvolveOp;
-import java.awt.image.Kernel;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -70,14 +69,24 @@ public class OCRService {
         double bestConfidence = -1.0;
         String bestText = "";
 
-        for (BufferedImage variant : variants) {
-            OCRResult partial = runOcrWithConfidence(tesseract, variant);
-            if (partial.getAverageConfidence() > bestConfidence ||
-                    (partial.getAverageConfidence() == bestConfidence && partial.getText().length() > bestText.length())) {
-                bestConfidence = partial.getAverageConfidence();
-                bestText = partial.getText();
-            }
-        }
+       for (BufferedImage variant : variants) {
+
+    OCRResult partial = runOcrWithConfidence(tesseract, variant);
+
+    if (partial.getAverageConfidence() > bestConfidence ||
+            (partial.getAverageConfidence() == bestConfidence &&
+             partial.getText().length() > bestText.length())) {
+
+        bestConfidence = partial.getAverageConfidence();
+        bestText = partial.getText();
+    }
+
+    // Free memory
+    variant.flush();
+}
+
+// Free original image
+image.flush();
 
         logger.info("Extracted text length: {} | avgConf={} | variants={}", bestText.length(), bestConfidence, variants.size());
 
@@ -137,42 +146,36 @@ public class OCRService {
         );
     }
 
-    private BufferedImage convertPdfToImage(MultipartFile file) throws IOException {
-        File tempFile = File.createTempFile("certificate", ".pdf");
-        file.transferTo(tempFile);
+   private BufferedImage convertPdfToImage(MultipartFile file) throws IOException {
+    File tempFile = File.createTempFile("certificate", ".pdf");
+    file.transferTo(tempFile);
 
-        try (PDDocument document = Loader.loadPDF(tempFile)){
-            PDFRenderer renderer = new PDFRenderer(document);
-            BufferedImage image = renderer.renderImageWithDPI(0, 300);
-            tempFile.delete();
-            return image;
-        }
+    try (PDDocument document = Loader.loadPDF(tempFile)) {
+        PDFRenderer renderer = new PDFRenderer(document);
+
+        // Lower memory usage for Render free tier
+        BufferedImage image = renderer.renderImageWithDPI(0, 120);
+
+        tempFile.delete();
+        return image;
     }
+}
 
-    private BufferedImage preprocessImage(BufferedImage original) {
-        BufferedImage grayscale = toGrayscale(original);
-        BufferedImage scaled = upscaleIfNeeded(grayscale);
-        BufferedImage contrast = stretchContrast(scaled);
-        BufferedImage sharpened = sharpen(contrast);
-        return otsuThreshold(sharpened);
-    }
+   
 
-    private List<BufferedImage> preprocessVariants(BufferedImage original) {
-        List<BufferedImage> variants = new ArrayList<>();
+   private List<BufferedImage> preprocessVariants(BufferedImage original) {
+    List<BufferedImage> variants = new ArrayList<>();
 
-        BufferedImage grayscale = toGrayscale(original);
-        BufferedImage scaled = upscaleIfNeeded(grayscale);
-        BufferedImage contrast = stretchContrast(scaled);
-        BufferedImage sharpened = sharpen(contrast);
+    BufferedImage grayscale = toGrayscale(original);
+    BufferedImage scaled = upscaleIfNeeded(grayscale);
+    BufferedImage contrast = stretchContrast(scaled);
 
-        variants.add(contrast);
-        variants.add(otsuThreshold(contrast));
-        variants.add(otsuThreshold(sharpened));
-        variants.add(adaptiveThreshold(contrast, 21, 7));
-        variants.add(preprocessImage(original));
+    // Keep only lightweight variants
+    variants.add(contrast);
+    variants.add(otsuThreshold(contrast));
 
-        return variants;
-    }
+    return variants;
+}
 
     private BufferedImage toGrayscale(BufferedImage original) {
         BufferedImage grayscale = new BufferedImage(
@@ -227,18 +230,7 @@ public class OCRService {
         return contrast;
     }
 
-    private BufferedImage sharpen(BufferedImage image) {
-        float[] sharpenKernel = {
-                0f, -1f, 0f,
-                -1f, 5f, -1f,
-                0f, -1f, 0f
-        };
-        ConvolveOp op = new ConvolveOp(new Kernel(3, 3, sharpenKernel), ConvolveOp.EDGE_NO_OP, null);
-        BufferedImage out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        op.filter(image, out);
-        return out;
-    }
-
+  
     private BufferedImage otsuThreshold(BufferedImage contrast) {
         int w = contrast.getWidth();
         int h = contrast.getHeight();
@@ -269,38 +261,5 @@ public class OCRService {
         return bin;
     }
 
-    private BufferedImage adaptiveThreshold(BufferedImage gray, int windowSize, int c) {
-        int w = gray.getWidth();
-        int h = gray.getHeight();
-        int radius = Math.max(1, windowSize / 2);
-
-        long[][] integral = new long[h + 1][w + 1];
-        for (int y = 1; y <= h; y++) {
-            long rowSum = 0;
-            for (int x = 1; x <= w; x++) {
-                int val = gray.getRaster().getSample(x - 1, y - 1, 0);
-                rowSum += val;
-                integral[y][x] = integral[y - 1][x] + rowSum;
-            }
-        }
-
-        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
-        for (int y = 0; y < h; y++) {
-            int y1 = Math.max(0, y - radius);
-            int y2 = Math.min(h - 1, y + radius);
-
-            for (int x = 0; x < w; x++) {
-                int x1 = Math.max(0, x - radius);
-                int x2 = Math.min(w - 1, x + radius);
-
-                long area = (long) (x2 - x1 + 1) * (y2 - y1 + 1);
-                long regionSum = integral[y2 + 1][x2 + 1] - integral[y1][x2 + 1] - integral[y2 + 1][x1] + integral[y1][x1];
-                int mean = (int) (regionSum / area);
-                int v = gray.getRaster().getSample(x, y, 0);
-                out.getRaster().setSample(x, y, 0, v > (mean - c) ? 255 : 0);
-            }
-        }
-
-        return out;
-    }
+   
 }
