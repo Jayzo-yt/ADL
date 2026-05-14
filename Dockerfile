@@ -1,7 +1,9 @@
 FROM eclipse-temurin:17
 
 RUN apt-get update && \
-    apt-get install -y tesseract-ocr
+    apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-eng
 
 WORKDIR /app
 

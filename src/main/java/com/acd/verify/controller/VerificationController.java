@@ -7,7 +7,6 @@ import com.acd.verify.repository.VerificationLogRepository;
 import com.acd.verify.service.DataExtractionService;
 import com.acd.verify.service.OCRService;
 import com.acd.verify.service.VerificationService;
-import net.sourceforge.tess4j.TesseractException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 
 @Controller
@@ -99,12 +97,16 @@ public class VerificationController {
 
             return "redirect:/result/" + log.getId();
 
-        } catch (IOException | TesseractException e) {
-            logger.error("Error processing certificate", e);
-            redirectAttributes.addFlashAttribute("error", "Error processing certificate: " + e.getMessage());
-            return "redirect:" + returnPage;
-        }
-    }
+        } catch (Exception e) {
+    logger.error("Error processing certificate", e);
+
+    redirectAttributes.addFlashAttribute(
+        "error",
+        "Error processing certificate: " + e.getMessage()
+    );
+
+    return "redirect:" + returnPage; }
+  }
 
     @GetMapping("/result/{id}")
     public String showResult(@PathVariable Long id, Model model) {
