@@ -147,32 +147,31 @@ image.flush();
     }
 
    private BufferedImage convertPdfToImage(MultipartFile file) throws IOException {
+
     File tempFile = File.createTempFile("certificate", ".pdf");
     file.transferTo(tempFile);
 
     try (PDDocument document = Loader.loadPDF(tempFile)) {
+
         PDFRenderer renderer = new PDFRenderer(document);
 
-        // Lower memory usage for Render free tier
-        BufferedImage image = renderer.renderImageWithDPI(0, 120);
+        // MUCH lighter than renderImageWithDPI
+        BufferedImage image = renderer.renderImage(0);
 
-        tempFile.delete();
         return image;
+
+    } finally {
+        tempFile.delete();
     }
 }
-
    
+private List<BufferedImage> preprocessVariants(BufferedImage original) {
 
-   private List<BufferedImage> preprocessVariants(BufferedImage original) {
     List<BufferedImage> variants = new ArrayList<>();
 
     BufferedImage grayscale = toGrayscale(original);
-    BufferedImage scaled = upscaleIfNeeded(grayscale);
-    BufferedImage contrast = stretchContrast(scaled);
 
-    // Keep only lightweight variants
-    variants.add(contrast);
-    variants.add(otsuThreshold(contrast));
+    variants.add(grayscale);
 
     return variants;
 }
@@ -187,79 +186,10 @@ image.flush();
         return grayscale;
     }
 
-    private BufferedImage upscaleIfNeeded(BufferedImage image) {
-        int minTargetWidth = 1600;
-        if (image.getWidth() >= minTargetWidth) {
-            return image;
-        }
+   
 
-        double scale = minTargetWidth / (double) image.getWidth();
-        int newWidth = (int) Math.round(image.getWidth() * scale);
-        int newHeight = (int) Math.round(image.getHeight() * scale);
-
-        BufferedImage upscaled = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_BYTE_GRAY);
-        upscaled.getGraphics().drawImage(image, 0, 0, newWidth, newHeight, null);
-        return upscaled;
-    }
-
-    private BufferedImage stretchContrast(BufferedImage grayscale) {
-        BufferedImage contrast = new BufferedImage(grayscale.getWidth(), grayscale.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        int w = grayscale.getWidth();
-        int h = grayscale.getHeight();
-
-        int min = 255, max = 0;
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int v = grayscale.getRaster().getSample(x, y, 0);
-                if (v < min) min = v;
-                if (v > max) max = v;
-            }
-        }
-
-        double scale = (max > min) ? 255.0 / (max - min) : 1.0;
-
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int v = grayscale.getRaster().getSample(x, y, 0);
-                int vv = (int) Math.round((v - min) * scale);
-                if (vv < 0) vv = 0; if (vv > 255) vv = 255;
-                contrast.getRaster().setSample(x, y, 0, vv);
-            }
-        }
-
-        return contrast;
-    }
-
+    
   
-    private BufferedImage otsuThreshold(BufferedImage contrast) {
-        int w = contrast.getWidth();
-        int h = contrast.getHeight();
-
-        int[] hist = new int[256];
-        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) hist[contrast.getRaster().getSample(x, y, 0)]++;
-        int total = w * h;
-        double sum = 0; for (int t=0;t<256;t++) sum += t * hist[t];
-        double sumB = 0; int wB = 0; int wF = 0; double varMax = 0; int threshold = 0;
-        for (int t=0;t<256;t++){
-            wB += hist[t]; if (wB == 0) continue;
-            wF = total - wB; if (wF == 0) break;
-            sumB += (double) (t * hist[t]);
-            double mB = sumB / wB;
-            double mF = (sum - sumB) / wF;
-            double varBetween = (double) wB * (double) wF * (mB - mF) * (mB - mF);
-            if (varBetween > varMax) { varMax = varBetween; threshold = t; }
-        }
-
-        BufferedImage bin = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int v = contrast.getRaster().getSample(x, y, 0);
-                bin.getRaster().setSample(x, y, 0, (v >= threshold) ? 255 : 0);
-            }
-        }
-
-        return bin;
-    }
 
    
 }
